@@ -2,11 +2,12 @@ package it.unibo.pps.mvu.runtime.view
 
 import scala.io.StdIn.readLine
 
-enum TuiElement[+Message](override val message: Option[Message]) extends Element[Message]:
-  case Container(override val child: Seq[Element[Message]]) extends TuiElement[Message](None)
-  case Text(text: String, override val child: Seq[Element[Message]] = Seq.empty) extends TuiElement[Message](None)
-  case Button(triggerString: String, onAction: () => Message, override val child: Seq[Element[Message]] = Seq.empty) extends TuiElement[Message](Some(onAction()))
-  case Separator(override val child: Seq[Element[Message]] = Seq.empty) extends TuiElement[Message](None)
+enum TuiElement[+Message](override val message: Option[Message], override val child: Seq[Element[Message]]) extends Element[Message]:
+  case Container(children: Seq[TuiElement[Message]] = Seq.empty) extends TuiElement[Message](None, children)
+  case Text(text: String, children: Seq[TuiElement[Message]] = Seq.empty) extends TuiElement[Message](None, children)
+  case Button(triggerString: String, onAction: () => Message, children: Seq[TuiElement[Message]] = Seq.empty)
+    extends TuiElement[Message](Some(onAction()), children)
+  case Separator(children: Seq[TuiElement[Message]] = Seq.empty) extends TuiElement[Message](None, children)
 
 object TuiElement:
   given tuiElementRenderer[Message]: ElementRenderer[Message, TuiElement] with
@@ -21,11 +22,12 @@ object TuiElement:
       userInput match
         case "increment" => Seq(buttonsAndHandlers("increment")())
         case "increment random" => Seq(buttonsAndHandlers("increment random")())
-        case t @ _ => println(s"Invalid input: '$t'\n"); Seq.empty
+        case invalidInput @ _ => println(s"Invalid input: '$invalidInput'\n"); Seq.empty
 
     private def buttonOnlyElement(rootElement: Element[Message]): Map[String, () => Message] =
       rootElement match
-        case elem @ TuiElement.Button(_, _, _) => elem.child.flatMap(el => buttonOnlyElement(el)).toMap + (elem.triggerString -> elem.onAction)
+        case element @ TuiElement.Button(_, _, _) =>
+          element.child.flatMap(el => buttonOnlyElement(el)).toMap + (element.triggerString -> element.onAction)
         case _ => rootElement.child.flatMap(el => buttonOnlyElement(el)).toMap
 
     private def textOnlyElement(rootElement: Element[Message]): Seq[String] =
