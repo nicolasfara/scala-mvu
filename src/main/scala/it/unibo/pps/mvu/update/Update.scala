@@ -9,13 +9,9 @@ import it.unibo.pps.mvu.runtime.view.TuiElement.{Button, Container, Separator, T
 
 import scala.util.Random
 
-enum Cmd[+Msg]:
-  case None extends Cmd[Nothing]
-  case Of(msg: Msg) extends Cmd[Msg]
-
-def update(model: Model, message: Message): (Model, Cmd[Message]) = (message, model) match
-  case (Increment(value), Counter(oldValue)) => (Counter(oldValue + value), Cmd.None)
-  case (IncrementRandom, Counter(oldValue)) => (model, Cmd.Of(Increment(Random.nextInt(10))))
+def update(model: Model, message: Message): Model = (message, model) match
+  case (Increment(value), Counter(oldValue)) => Counter(oldValue + value)
+  case (IncrementRandom, Counter(oldValue)) => Counter(oldValue + Random.nextInt(10))
 
 def view(model: Model): TuiElement[Message] = model match
   case Counter(value) => Container(
