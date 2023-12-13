@@ -1,6 +1,7 @@
 package it.unibo.pps.mvu.runtime.view
 
 import scala.io.StdIn.readLine
+import scala.collection.mutable.ArrayBuffer
 
 object TuiElements:
 
@@ -17,19 +18,28 @@ object TuiElements:
 
   import TuiElementImpl.*
 
-  // Smart constructors ---------------------------------------------------------
+  class ContainerScope[Message]:
+    val children = ArrayBuffer[TuiElement[Message]]()
 
-  def text[Message](text: String, children: Seq[TuiElement[Message]] = Seq()): TuiElement[Message] =
-    Text(text, children)
+  def text[Message](text: String)(using cs: ContainerScope[Message]): TuiElement[Message] =
+    val txt = Text(text, Seq())
+    cs.children += txt
+    txt
 
-  def separator[Message](children: Seq[TuiElement[Message]] = Seq()): TuiElement[Message] =
-    Separator(children)
+  def separator[Message](using cs: ContainerScope[Message]): TuiElement[Message] =
+    val sep = Separator(Seq())
+    cs.children += sep
+    sep
 
-  def button[Message](triggerString: String, onAction: () => Message, children: Seq[TuiElement[Message]] = Seq()): TuiElement[Message] =
-    Button(triggerString, onAction, children)
+  def button[Message](triggerString: String, onAction: () => Message)(using cs: ContainerScope[Message]): TuiElement[Message] =
+    val btn = Button(triggerString, onAction, Seq())
+    cs.children += btn
+    btn
 
-  def container[Message](children: Seq[TuiElement[Message]]): TuiElement[Message] =
-    Container(children)
+  def container[Message](init: ContainerScope[Message] ?=> Unit): TuiElement[Message] =
+    given cs: ContainerScope[Message] = ContainerScope[Message]()
+    init
+    Container(cs.children.toSeq)
 
   given tuiElementRenderer[Message]: ElementRenderer[Message, TuiElement] with
     override def render(rootElement: TuiElement[Message]): Seq[Message] =
@@ -45,7 +55,7 @@ object TuiElements:
         case "increment random" => Seq(buttonsAndHandlers("increment random")())
         case invalidInput @ _ =>
           println(s"Invalid input: '$invalidInput'\n")
-          Seq[Message]()
+          Seq()
 
     private def buttonOnlyElement(rootElement: Element[Message]): Map[String, () => Message] =
       rootElement match

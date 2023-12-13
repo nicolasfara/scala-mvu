@@ -25,14 +25,10 @@ def update(model: Model, message: Message): Model = message match
   case Increment(value) => increment(model, value)
   case IncrementRandom => increment(model, Random.nextInt(10))
 
-def view(model: Model): TuiElement[Message] = container(
-    Seq(
-      text("+++ MVU Counter +++"),
-      text("'increment' increments the counter by 1"),
-      text("'increment random' increments the counter by a random value between 0 and 10"),
-      separator(),
-      text(s"Counter value: ${getCounter(model)}"),
-      button("increment", () => Increment(1)),
-      button("increment random", () => IncrementRandom),
-    )
-  )
+def view(model: Model): TuiElement[Message] = container {
+  text("+++ MVU Counter +++")
+  separator
+  text(s"Counter value: ${getCounter(model)}")
+  button("increment", () => Increment(1))
+  button("increment random", () => IncrementRandom)
+}
