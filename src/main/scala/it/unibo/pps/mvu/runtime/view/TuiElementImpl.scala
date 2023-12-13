@@ -11,10 +11,9 @@ object TuiElements:
 
   protected enum TuiElementImpl[+Message](override val message: Option[Message], override val child: Seq[Element[Message]]) extends Element[Message]:
     case Container(children: Seq[TuiElementImpl[Message]]) extends TuiElementImpl[Message](None, children)
-    case Text(text: String, children: Seq[TuiElementImpl[Message]]) extends TuiElementImpl[Message](None, children)
-    case Button(triggerString: String, onAction: () => Message, children: Seq[TuiElementImpl[Message]])
-      extends TuiElementImpl[Message](Some(onAction()), children)
-    case Separator(children: Seq[TuiElementImpl[Message]]) extends TuiElementImpl[Message](None, children)
+    case Text(text: String) extends TuiElementImpl[Message](None, Seq())
+    case Input(onInput: () => Map[String, Message]) extends TuiElementImpl[Message](None, Seq())
+    case Separator[Message]() extends TuiElementImpl[Message](None, Seq())
 
   import TuiElementImpl.*
 
@@ -22,19 +21,19 @@ object TuiElements:
     val children = ArrayBuffer[TuiElement[Message]]()
 
   def text[Message](text: String)(using cs: ContainerScope[Message]): TuiElement[Message] =
-    val txt = Text(text, Seq())
+    val txt = Text(text)
     cs.children += txt
     txt
 
   def separator[Message](using cs: ContainerScope[Message]): TuiElement[Message] =
-    val sep = Separator(Seq())
+    val sep = Separator()
     cs.children += sep
     sep
 
-  def button[Message](triggerString: String, onAction: () => Message)(using cs: ContainerScope[Message]): TuiElement[Message] =
-    val btn = Button(triggerString, onAction, Seq())
-    cs.children += btn
-    btn
+  def input[Message](onInput: () => Map[String, Message])(using cs: ContainerScope[Message]): TuiElement[Message] =
+    val inp = Input(onInput)
+    cs.children += inp
+    inp
 
   def container[Message](init: ContainerScope[Message] ?=> Unit): TuiElement[Message] =
     given cs: ContainerScope[Message] = ContainerScope[Message]()
@@ -44,24 +43,21 @@ object TuiElements:
   given tuiElementRenderer[Message]: ElementRenderer[Message, TuiElement] with
     override def render(rootElement: TuiElement[Message]): Seq[Message] =
       textOnlyElement(rootElement).foreach(println)
-      val buttonsAndHandlers = buttonOnlyElement(rootElement)
       print("Insert command: ")
       val userInput = readLine()
       println()
       println("--------------------------------------------------")
       println()
-      userInput match
-        case "increment" => Seq(buttonsAndHandlers("increment")())
-        case "increment random" => Seq(buttonsAndHandlers("increment random")())
-        case invalidInput @ _ =>
-          println(s"Invalid input: '$invalidInput'\n")
+      inputOnlyElement(rootElement).get(userInput) match
+        case Some(message) => Seq(message)
+        case _ =>
+          println(s"Invalid input: '$userInput'\n")
           Seq()
 
-    private def buttonOnlyElement(rootElement: Element[Message]): Map[String, () => Message] =
+    private def inputOnlyElement(rootElement: Element[Message]): Map[String, Message] =
       rootElement match
-        case element: Button[_] =>
-          element.child.flatMap(buttonOnlyElement).toMap + (element.triggerString -> element.onAction)
-        case _ => rootElement.child.flatMap(buttonOnlyElement).toMap
+        case element: Input[_] => element.child.flatMap(inputOnlyElement).toMap ++ element.onInput()
+        case _ => rootElement.child.flatMap(inputOnlyElement).toMap
 
     private def textOnlyElement(rootElement: Element[Message]): Seq[String] =
       rootElement match

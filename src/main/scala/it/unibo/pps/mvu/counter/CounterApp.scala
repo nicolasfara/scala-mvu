@@ -29,6 +29,5 @@ def view(model: Model): TuiElement[Message] = container:
   text("+++ MVU Counter +++")
   separator
   text(s"Counter value: ${getCounter(model)}")
-  button("increment", () => Increment(1))
-  button("increment random", () => IncrementRandom)
+  input(() => Map("increment" -> Increment(1), "increment random" -> IncrementRandom))
 
