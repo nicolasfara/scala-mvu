@@ -19,13 +19,13 @@ object TuiElements:
 
   // Smart constructors ---------------------------------------------------------
 
-  def text[Message](text: String, children: Seq[TuiElement[Message]] = Seq[TuiElement[Message]]()): TuiElement[Message] =
+  def text[Message](text: String, children: Seq[TuiElement[Message]] = Seq()): TuiElement[Message] =
     Text(text, children)
 
-  def separator[Message](children: Seq[TuiElement[Message]] = Seq[TuiElement[Message]]()): TuiElement[Message] =
+  def separator[Message](children: Seq[TuiElement[Message]] = Seq()): TuiElement[Message] =
     Separator(children)
 
-  def button[Message](triggerString: String, onAction: () => Message, children: Seq[TuiElement[Message]] = Seq[TuiElement[Message]]()): TuiElement[Message] =
+  def button[Message](triggerString: String, onAction: () => Message, children: Seq[TuiElement[Message]] = Seq()): TuiElement[Message] =
     Button(triggerString, onAction, children)
 
   def container[Message](children: Seq[TuiElement[Message]]): TuiElement[Message] =
