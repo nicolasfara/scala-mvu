@@ -30,4 +30,3 @@ def view(model: Model): TuiElement[Message] = container:
   separator
   text(s"Counter value: ${getCounter(model)}")
   input(() => Map("increment" -> Increment(1), "increment random" -> IncrementRandom))
-

@@ -2,6 +2,14 @@ package it.unibo.pps.mvu.runtime.view
 
 import scala.io.StdIn.readLine
 import scala.collection.mutable.ArrayBuffer
+import zio.stream.Stream
+import zio.Console
+
+import java.io.IOException
+import zio.stream.ZStream
+import zio.ZIO
+import zio.IO
+
 
 object TuiElements:
 
@@ -40,19 +48,32 @@ object TuiElements:
     init
     Container(cs.children.toSeq)
 
-  given tuiElementRenderer[Message]: ElementRenderer[Message, TuiElement] with
-    override def render(rootElement: TuiElement[Message]): Seq[Message] =
-      textOnlyElement(rootElement).foreach(println)
-      print("Insert command: ")
-      val userInput = readLine()
-      println()
-      println("--------------------------------------------------")
-      println()
-      inputOnlyElement(rootElement).get(userInput) match
-        case Some(message) => Seq(message)
-        case _ =>
-          println(s"Invalid input: '$userInput'\n")
-          Seq()
+  given tuiElementRenderer[Message]: ElementRenderer[Message, TuiElement, [X] =>> Stream[IOException, X]] with
+    override def render(rootElement: TuiElement[Message]): Stream[IOException, Message] = ZStream.fromZIO:
+      for
+        textElement <- renderTexts(textOnlyElement(rootElement))
+        userInput <- Console.readLine
+        message = inputOnlyElement(rootElement).get(userInput) match
+          case Some(message) => message
+          case _ => throw IOException(s"Invalid input: '$userInput'")
+      yield message
+    // override def render(rootElement: TuiElement[Message]): Seq[Message] =
+    //   textOnlyElement(rootElement).foreach(println)
+    //   print("Insert command: ")
+    //   val userInput = readLine()
+    //   println()
+    //   println("--------------------------------------------------")
+    //   println()
+    //   inputOnlyElement(rootElement).get(userInput) match
+    //     case Some(message) => Seq(message)
+    //     case _ =>
+    //       println(s"Invalid input: '$userInput'\n")
+    //       Seq()
+
+    private def renderTexts(elements: Seq[String]): IO[IOException, Unit] =
+      elements match
+        case Seq() => ZIO.unit
+        case Seq(head, tail @ _*) => Console.printLine(head) *> renderTexts(tail)
 
     private def inputOnlyElement(rootElement: Element[Message]): Map[String, Message] =
       rootElement match
