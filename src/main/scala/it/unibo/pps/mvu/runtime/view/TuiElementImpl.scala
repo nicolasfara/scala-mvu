@@ -26,6 +26,7 @@ object TuiElements:
   import TuiElementImpl.*
 
   class ContainerScope[Message]:
+    @SuppressWarnings(Array("org.wartremover.warts.MutableDataStructures"))
     val children = ArrayBuffer[TuiElement[Message]]()
 
   def text[Message](text: String)(using cs: ContainerScope[Message]): TuiElement[Message] =
@@ -48,27 +49,17 @@ object TuiElements:
     init
     Container(cs.children.toSeq)
 
-  given tuiElementRenderer[Message]: ElementRenderer[Message, TuiElement, [X] =>> Stream[IOException, X]] with
-    override def render(rootElement: TuiElement[Message]): Stream[IOException, Message] = ZStream.fromZIO:
+  given tuiElementRenderer[Message]: ElementRenderer[Message, TuiElement] with
+    override def render(rootElement: TuiElement[Message]): IO[IOException, Message] =
       for
         textElement <- renderTexts(textOnlyElement(rootElement))
+        _ <- Console.print("Insert command: ")
         userInput <- Console.readLine
-        message = inputOnlyElement(rootElement).get(userInput) match
-          case Some(message) => message
-          case _ => throw IOException(s"Invalid input: '$userInput'")
+        message <- inputOnlyElement(rootElement).get(userInput) match
+          case Some(message) => ZIO.succeed(message)
+          case _ => Console.printLineError(s"Invalid input: ${userInput}\n") *> render(rootElement)
+        _ <- Console.printLine("")
       yield message
-    // override def render(rootElement: TuiElement[Message]): Seq[Message] =
-    //   textOnlyElement(rootElement).foreach(println)
-    //   print("Insert command: ")
-    //   val userInput = readLine()
-    //   println()
-    //   println("--------------------------------------------------")
-    //   println()
-    //   inputOnlyElement(rootElement).get(userInput) match
-    //     case Some(message) => Seq(message)
-    //     case _ =>
-    //       println(s"Invalid input: '$userInput'\n")
-    //       Seq()
 
     private def renderTexts(elements: Seq[String]): IO[IOException, Unit] =
       elements match
