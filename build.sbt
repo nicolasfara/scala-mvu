@@ -1,6 +1,6 @@
 val scala3Version = "3.3.1"
 
-wartremoverErrors ++= Warts.allBut(Wart.Recursion, Wart.Nothing, Wart.MutableDataStructures)
+wartremoverErrors ++= Warts.allBut(Wart.Recursion, Wart.Nothing, Wart.Any)
 
 lazy val root = project
   .in(file("."))
