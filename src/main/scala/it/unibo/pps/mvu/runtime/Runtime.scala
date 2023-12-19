@@ -9,6 +9,15 @@ import zio.Hub
 import zio.stream.ZStream
 import zio.Promise
 
+/**
+  * Runtime.
+  *
+  * @param currentModel
+  * @param update
+  * @param view
+  * @param er
+  * @return
+  */
 def mvuRuntime[Model, Message, El[A] <: Element[A]](currentModel: Model)(
     update: (Model, Message) => Model
 )(view: Model => El[Message])(using
